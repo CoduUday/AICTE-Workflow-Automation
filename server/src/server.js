@@ -1,6 +1,7 @@
 import app from './app.js';
 import { env } from './config/env.js';
 import { connectDB, disconnectDB } from './config/db.js';
+import { initReminderScheduler, stopReminderScheduler } from './jobs/reminderJob.js';
 
 let server;
 
@@ -8,6 +9,11 @@ const startServer = async () => {
   try {
     // Connect to database
     await connectDB();
+
+    // Initialize scheduled reminder engine (with restart recovery)
+    if (!env.isTest) {
+      initReminderScheduler();
+    }
 
     // Start Express listener
     server = app.listen(env.PORT, () => {
@@ -23,6 +29,8 @@ const startServer = async () => {
 // Graceful shutdown handling
 const gracefulShutdown = async (signal) => {
   console.log(`\n[Server] Received ${signal}. Initiating graceful shutdown...`);
+
+  stopReminderScheduler();
 
   if (server) {
     server.close(async () => {

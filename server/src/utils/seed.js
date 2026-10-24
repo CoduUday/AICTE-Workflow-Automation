@@ -3,6 +3,9 @@ import { env } from '../config/env.js';
 import { User } from '../models/User.js';
 import { Institution } from '../models/Institution.js';
 import { Application } from '../models/Application.js';
+import { ComplianceItem } from '../models/ComplianceItem.js';
+import { Alert } from '../models/Alert.js';
+import { EVCVisit } from '../models/EVCVisit.js';
 import { ROLES, WORKFLOW_STAGES } from '../config/workflow.js';
 
 export const SEED_USERS = [
@@ -319,6 +322,145 @@ export const seedDatabase = async () => {
     );
   }
   console.log(`[Seed] Seeded ${SEED_APPLICATIONS.length} applications.`);
+
+  // Upsert compliance items
+  const SEED_COMPLIANCE_ITEMS = [
+    {
+      id: 'CMP-101',
+      applicationId: 'APP-2026-0041',
+      institutionId: 'INST-2024-DEL-089',
+      institutionName: 'Delhi Institute of Technology & Management',
+      requirementType: 'Fire Safety Certificate & NOC',
+      description: 'Submission of 3-year recurring Fire Safety Compliance certificate from Municipal Fire Services.',
+      dueDate: new Date(Date.now() + 15 * 24 * 3600 * 1000),
+      status: 'Complied',
+      criticality: 'High',
+      documentReference: 'Fire_Safety_Renewal_NOC_2026.pdf',
+    },
+    {
+      id: 'CMP-102',
+      applicationId: 'APP-2026-0041',
+      institutionId: 'INST-2024-DEL-089',
+      institutionName: 'Delhi Institute of Technology & Management',
+      requirementType: 'Perpetual Land Lease Undertaking',
+      description: 'Registered Lease Agreement renewal document certifying unencumbered possession for min 30 years.',
+      dueDate: new Date(Date.now() - 5 * 24 * 3600 * 1000), // Overdue by 5 days
+      status: 'Overdue',
+      criticality: 'High',
+      documentReference: 'Land_Lease_Pending_Draft.pdf',
+    },
+    {
+      id: 'CMP-103',
+      applicationId: 'APP-2026-0044',
+      institutionId: 'INST-2024-KOL-021',
+      institutionName: 'Eastern College of Engineering & Bio-Informatics',
+      requirementType: 'Faculty Cadre Ratio & Aadhaar Biometric Report',
+      description: 'Ensure Professor : Associate Professor : Assistant Professor ratio is maintained at 1:2:6 with biometric records.',
+      dueDate: new Date(Date.now() + 5 * 24 * 3600 * 1000), // Due in 5 days (Due Soon)
+      status: 'Due Soon',
+      criticality: 'High',
+    },
+    {
+      id: 'CMP-104',
+      applicationId: 'APP-2026-0042',
+      institutionId: 'INST-2024-BLR-012',
+      institutionName: 'Karnataka Institute of Advanced Robotics & AI',
+      requirementType: 'Anti-Ragging Committee & CCTV Coverage Affidavit',
+      description: 'Institutional submission of anti-ragging squad composition, helpline notices, and 24x7 CCTV audit.',
+      dueDate: new Date(Date.now() + 20 * 24 * 3600 * 1000),
+      status: 'Under Review',
+      criticality: 'Medium',
+      documentReference: 'Anti_Ragging_Affidavit_2026.pdf',
+      evidence: [
+        {
+          id: 'ev-001',
+          documentName: 'Anti_Ragging_Affidavit_2026.pdf',
+          verificationStatus: 'Submitted',
+        },
+      ],
+    },
+  ];
+
+  for (const compData of SEED_COMPLIANCE_ITEMS) {
+    await ComplianceItem.findOneAndUpdate({ id: compData.id }, compData, { upsert: true, new: true });
+  }
+  console.log(`[Seed] Seeded ${SEED_COMPLIANCE_ITEMS.length} compliance obligations.`);
+
+  // Upsert alerts
+  const SEED_ALERTS = [
+    {
+      id: 'ALT-501',
+      recipientRole: ROLES.INSTITUTION,
+      institutionId: 'INST-2024-DEL-089',
+      institutionName: 'Delhi Institute of Technology & Management',
+      type: 'CRITICAL',
+      title: 'Overdue Compliance: Land Lease Submission',
+      message: 'Delhi Institute of Technology & Management has passed the due date for Perpetual Land Lease Renewal.',
+      severity: 'danger',
+      dueAt: new Date(Date.now() - 5 * 24 * 3600 * 1000),
+      dedupKey: 'SEED_ALT_501',
+      read: false,
+    },
+    {
+      id: 'ALT-502',
+      recipientRole: ROLES.INSTITUTION,
+      institutionId: 'INST-2024-DEL-089',
+      institutionName: 'Delhi Institute of Technology & Management',
+      type: 'WARNING',
+      title: 'EVC Visit Approaching in 48 Hours',
+      message: 'Expert Committee on-site physical inspection scheduled for Delhi Institute.',
+      severity: 'warning',
+      dueAt: new Date(Date.now() + 2 * 24 * 3600 * 1000),
+      dedupKey: 'SEED_ALT_502',
+      read: false,
+    },
+  ];
+
+  for (const alertData of SEED_ALERTS) {
+    await Alert.findOneAndUpdate({ id: alertData.id }, alertData, { upsert: true, new: true });
+  }
+  console.log(`[Seed] Seeded ${SEED_ALERTS.length} alerts.`);
+
+  // Upsert EVC visits
+  const SEED_EVC_VISITS = [
+    {
+      id: 'EVC-701',
+      applicationId: 'APP-2026-0041',
+      institutionId: 'INST-2024-DEL-089',
+      institutionName: 'Delhi Institute of Technology & Management',
+      visitDate: new Date('2026-04-20T09:30:00Z'),
+      status: 'Scheduled',
+      committeeLead: 'Prof. R. C. Mathur (IIT Roorkee)',
+      committeeMembers: [
+        'Prof. R. C. Mathur (IIT Roorkee)',
+        'Dr. Meenakshi Iyer (Architectural Expert, SPA Delhi)',
+      ],
+      inspectionScope: 'Physical AI Lab setup, Classroom acoustic standards, Fire safety infrastructure',
+      venueAddress: 'Sector 62, Institutional Area, Knowledge Park, New Delhi',
+      reportSubmitted: false,
+    },
+    {
+      id: 'EVC-702',
+      applicationId: 'APP-2026-0042',
+      institutionId: 'INST-2024-BLR-012',
+      institutionName: 'Karnataka Institute of Advanced Robotics & AI',
+      visitDate: new Date('2026-05-15T10:00:00Z'),
+      status: 'Proposed',
+      committeeLead: 'Prof. K. Venkatesh (IISc Bangalore)',
+      committeeMembers: [
+        'Prof. K. Venkatesh (IISc Bangalore)',
+        'Dr. Priya Nair (Structural Engineering Expert, NIT Surathkal)',
+      ],
+      inspectionScope: 'Greenfield site clearance, boundary wall verification',
+      venueAddress: 'Plot 44-B, Aerospace Technology Park, Devanahalli, Bangalore',
+      reportSubmitted: false,
+    },
+  ];
+
+  for (const evcData of SEED_EVC_VISITS) {
+    await EVCVisit.findOneAndUpdate({ id: evcData.id }, evcData, { upsert: true, new: true });
+  }
+  console.log(`[Seed] Seeded ${SEED_EVC_VISITS.length} EVC visits.`);
 
   console.log('[Seed] Database seeding completed successfully.');
 };
