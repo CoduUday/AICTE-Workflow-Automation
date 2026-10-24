@@ -1,8 +1,4 @@
-/**
- * Central models export index
- * Future models (User, Application, ComplianceItem, Alert) will be registered and exported here.
- */
-
-export const models = {};
-
-export default models;
+export { User } from './User.js';
+export { Institution } from './Institution.js';
+export { Application } from './Application.js';
+export { WorkflowEvent } from './WorkflowEvent.js';

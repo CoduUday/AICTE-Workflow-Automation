@@ -1,8 +1,3 @@
-/**
- * Central services export index
- * Future business services (workflowEngine, complianceService, alertService) will be registered and exported here.
- */
-
-export const services = {};
-
-export default services;
+export { authService } from './auth.service.js';
+export { workflowService } from './workflow.service.js';
+export { applicationService } from './application.service.js';
