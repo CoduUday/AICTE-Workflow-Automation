@@ -1,5 +1,5 @@
 # AICTE Workflow Automation — Shared REST API Contract
-> **Document Status:** RATIFIED & FINALIZED (Joint Agreement between Frontend & Backend)  
+> **Document Status:** AGREED BASELINE (Approved by Team)  
 > **Target Version:** MVP 1.0.0  
 > **Base URL:** `http://localhost:5000/api`  
 > **Shared Ownership:** `Frontend (client/)` & `Backend (server/)`
