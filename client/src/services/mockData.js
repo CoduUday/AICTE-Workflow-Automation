@@ -260,7 +260,7 @@ export const INITIAL_APPLICATIONS = [
     assignedTo: 'Prof. Ananya Sen',
     assignedToId: 'usr-2',
     submittedAt: '2026-01-18T11:45:00Z',
-    targetResolutionDate: '2026-02-28T00:00:00Z', // Overdue
+    targetResolutionDate: '2026-02-28T00:00:00Z',
     intakeCapacityRequested: 120,
     infrastructureAreaSqM: 9800,
     landTenureType: 'Owned',
@@ -338,89 +338,6 @@ export const INITIAL_APPLICATIONS = [
       { id: 'doc-012', name: 'State Govt NOC for Closure.pdf', size: '1.4 MB', uploadDate: '2026-01-20', status: 'Verified', documentType: 'Government NOC', url: '#' },
       { id: 'doc-013', name: 'Student Redeployment Plan & Undertaking.pdf', size: '3.1 MB', uploadDate: '2026-02-12', status: 'Under Review', documentType: 'Student Welfare Undertaking', url: '#' }
     ]
-  },
-  {
-    id: 'APP-2026-0046',
-    applicationNumber: 'AICTE/2026/0046',
-    institutionId: 'INST-2024-JAIPUR-009',
-    institutionName: 'Rajasthan Academy of Technology & Design',
-    region: 'North-West (NWRO)',
-    academicYear: '2026-2027',
-    applicationType: 'Introduction of Emerging Areas',
-    currentStage: 'SUBMITTED',
-    status: 'Pending',
-    assignedTo: 'Prof. Ananya Sen',
-    assignedToId: 'usr-2',
-    submittedAt: '2026-03-15T11:00:00Z',
-    targetResolutionDate: '2026-04-30T00:00:00Z',
-    intakeCapacityRequested: 60,
-    infrastructureAreaSqM: 10200,
-    landTenureType: 'Owned Freehold',
-    deficiencyCount: 0,
-    officerComments: 'Freshly queued for preliminary scrutiny.',
-    stageHistory: [
-      {
-        stage: 'SUBMITTED',
-        action: 'Application Submitted Online',
-        actor: 'Dr. R. K. Meena',
-        role: 'institution',
-        timestamp: '2026-03-15T11:00:00Z',
-        notes: 'Request for introduction of Cyber Security & IoT B.Tech program.'
-      }
-    ],
-    documents: [
-      { id: 'doc-014', name: 'Affiliation Letter from State Technical University.pdf', size: '2.1 MB', uploadDate: '2026-03-15', status: 'Pending Review', documentType: 'University Affiliation', url: '#' },
-      { id: 'doc-015', name: 'AICTE Joint Account Guarantee.pdf', size: '1.9 MB', uploadDate: '2026-03-15', status: 'Pending Review', documentType: 'Financial Guarantee', url: '#' }
-    ]
-  },
-  {
-    id: 'APP-2026-0047',
-    applicationNumber: 'AICTE/2026/0047',
-    institutionId: 'INST-2024-CHG-034',
-    institutionName: 'Punjab Institute of Nanotechnology & Advanced Physics',
-    region: 'North-West (NWRO)',
-    academicYear: '2024-2025',
-    applicationType: 'New Technical Institution Setup',
-    currentStage: 'REJECTED',
-    status: 'Rejected',
-    assignedTo: 'Justice (Retd.) V. K. Rao',
-    assignedToId: 'usr-4',
-    submittedAt: '2024-10-10T14:00:00Z',
-    targetResolutionDate: '2024-12-15T00:00:00Z',
-    intakeCapacityRequested: 180,
-    infrastructureAreaSqM: 13500,
-    landTenureType: 'Sub-Lease (Unapproved)',
-    deficiencyCount: 3,
-    officerComments: 'Land title dispute and non-contiguous land parcel prohibited approval under APH rules.',
-    stageHistory: [
-      {
-        stage: 'SUBMITTED',
-        action: 'Application Lodged',
-        actor: 'Dr. G. S. Sandhu',
-        role: 'institution',
-        timestamp: '2024-10-10T14:00:00Z',
-        notes: 'Application for greenfield technical campus.'
-      },
-      {
-        stage: 'SCRUTINY',
-        action: 'Deficiencies Found (Land Title)',
-        actor: 'Prof. Ananya Sen',
-        role: 'scrutiny_officer',
-        timestamp: '2024-10-25T11:00:00Z',
-        notes: 'Land deed indicates disputed sub-lease.'
-      },
-      {
-        stage: 'REJECTED',
-        action: 'Application Rejected by SAC',
-        actor: 'Justice (Retd.) V. K. Rao',
-        role: 'committee_officer',
-        timestamp: '2024-11-20T16:00:00Z',
-        notes: 'Statutory minimum 30-year unencumbered land tenure condition not fulfilled.'
-      }
-    ],
-    documents: [
-      { id: 'doc-016', name: 'Disputed Land Sub-lease Deed.pdf', size: '8.4 MB', uploadDate: '2024-10-10', status: 'Deficient', documentType: 'Land Document', url: '#' }
-    ]
   }
 ];
 
@@ -432,10 +349,16 @@ export const INITIAL_COMPLIANCE = [
     requirementType: 'Fire Safety Certificate & NOC',
     description: 'Submission of 3-year recurring Fire Safety Compliance certificate from Municipal Fire Services.',
     dueDate: '2026-04-05T00:00:00Z',
-    status: 'Complied',
+    expiryDate: '2026-06-30T00:00:00Z',
+    status: 'Completed',
     criticality: 'High',
+    certificateNumber: 'DFS/NOC/2026/8892',
     documentReference: 'Fire_Safety_Renewal_NOC_2026.pdf',
-    lastNotifiedAt: '2026-03-01T09:00:00Z'
+    evidenceNotes: 'Clearance renewed by Delhi Fire Service following emergency hydrant inspection.',
+    submittedAt: '2026-03-04T12:00:00Z',
+    verifiedBy: 'Prof. Ananya Sen',
+    verifiedAt: '2026-03-05T11:00:00Z',
+    verificationNotes: 'Meets NBC 2016 Part 4 standards. Approved without deficiency.'
   },
   {
     id: 'CMP-102',
@@ -444,10 +367,16 @@ export const INITIAL_COMPLIANCE = [
     requirementType: 'Perpetual Land Lease Undertaking',
     description: 'Registered Lease Agreement renewal document certifying unencumbered possession for min 30 years.',
     dueDate: '2026-03-20T00:00:00Z',
+    expiryDate: '2056-03-20T00:00:00Z',
     status: 'Overdue',
-    criticality: 'High',
+    criticality: 'Critical',
+    certificateNumber: 'REG-DIT-LEASE-99',
     documentReference: 'Land_Lease_Pending_Draft.pdf',
-    lastNotifiedAt: '2026-03-18T08:30:00Z'
+    evidenceNotes: 'Draft agreement prepared, sub-registrar execution pending.',
+    submittedAt: '2026-03-18T10:00:00Z',
+    verifiedBy: null,
+    verifiedAt: null,
+    verificationNotes: null
   },
   {
     id: 'CMP-103',
@@ -456,10 +385,16 @@ export const INITIAL_COMPLIANCE = [
     requirementType: 'Faculty Cadre Ratio & Aadhaar Biometric Report',
     description: 'Ensure Professor : Associate Professor : Assistant Professor ratio is maintained at 1:2:6 with biometric records.',
     dueDate: '2026-04-12T00:00:00Z',
-    status: 'Pending',
+    expiryDate: '2026-12-31T00:00:00Z',
+    status: 'Due Soon',
     criticality: 'High',
+    certificateNumber: null,
     documentReference: null,
-    lastNotifiedAt: '2026-03-10T11:00:00Z'
+    evidenceNotes: null,
+    submittedAt: null,
+    verifiedBy: null,
+    verifiedAt: null,
+    verificationNotes: null
   },
   {
     id: 'CMP-104',
@@ -468,10 +403,16 @@ export const INITIAL_COMPLIANCE = [
     requirementType: 'Anti-Ragging Committee & CCTV Coverage Affidavit',
     description: 'Institutional submission of anti-ragging squad composition, helpline notices, and 24x7 gate/corridor CCTV audit.',
     dueDate: '2026-04-28T00:00:00Z',
+    expiryDate: '2027-04-28T00:00:00Z',
     status: 'Under Review',
     criticality: 'Medium',
+    certificateNumber: 'AFF-ARC-2026-44',
     documentReference: 'Anti_Ragging_Affidavit_2026.pdf',
-    lastNotifiedAt: '2026-03-14T10:00:00Z'
+    evidenceNotes: 'Institutional Anti-Ragging committee notified on campus noticeboards and web portal.',
+    submittedAt: '2026-03-14T09:30:00Z',
+    verifiedBy: null,
+    verifiedAt: null,
+    verificationNotes: null
   },
   {
     id: 'CMP-105',
@@ -480,22 +421,52 @@ export const INITIAL_COMPLIANCE = [
     requirementType: 'Internal Complaints Committee (ICC) Annual Report',
     description: 'Mandatory annual report filing regarding gender sensitization and prevention of sexual harassment.',
     dueDate: '2026-05-15T00:00:00Z',
-    status: 'Complied',
+    expiryDate: '2026-12-31T00:00:00Z',
+    status: 'Completed',
     criticality: 'Normal',
+    certificateNumber: 'ICC-MPVI-2025-26',
     documentReference: 'ICC_Annual_Filing_2025_26.pdf',
-    lastNotifiedAt: '2026-02-20T14:00:00Z'
+    evidenceNotes: 'Four sensitization workshops conducted across all polytechnic departments.',
+    submittedAt: '2026-02-18T14:00:00Z',
+    verifiedBy: 'Prof. Ananya Sen',
+    verifiedAt: '2026-02-20T16:00:00Z',
+    verificationNotes: 'Report compliant with UGC/AICTE gender equity guidelines.'
   },
   {
     id: 'CMP-106',
     applicationId: 'APP-2026-0045',
     institutionName: 'Telangana Institute of Pharmaceutical Sciences',
-    requirementType: 'Student Fee Refund & Migration Compliance Report',
-    description: 'Undertaking acknowledging zero retention of original qualification certificates and adherence to refund norms.',
-    dueDate: '2026-03-25T00:00:00Z',
-    status: 'Overdue',
+    requirementType: 'Building Occupancy & Structural Stability Certificate',
+    description: 'Certified civil engineer report confirming structural integrity and earthquake resistance standards.',
+    dueDate: '2026-01-10T00:00:00Z',
+    expiryDate: '2025-12-31T00:00:00Z',
+    status: 'Expired',
+    criticality: 'Critical',
+    certificateNumber: 'STRUCT-HYD-882',
+    documentReference: 'Expired_Stability_Certificate_2022.pdf',
+    evidenceNotes: 'Previous 3-year certificate has lapsed. Renewal survey delayed by municipal authorities.',
+    submittedAt: '2026-01-05T11:00:00Z',
+    verifiedBy: 'Prof. Ananya Sen',
+    verifiedAt: '2026-01-15T10:00:00Z',
+    verificationNotes: 'Certificate expired on 31 Dec 2025. Immediate recertification mandated.'
+  },
+  {
+    id: 'CMP-107',
+    applicationId: 'APP-2026-0042',
+    institutionName: 'Karnataka Institute of Advanced Robotics & AI',
+    requirementType: 'Divyangjan Barrier-Free Campus Access Audit',
+    description: 'Ramps with 1:12 slope, tactile paving, Braille lift signage, and accessible rest-rooms.',
+    dueDate: '2026-05-02T00:00:00Z',
+    expiryDate: '2028-05-02T00:00:00Z',
+    status: 'Pending',
     criticality: 'High',
+    certificateNumber: null,
     documentReference: null,
-    lastNotifiedAt: '2026-03-21T09:00:00Z'
+    evidenceNotes: null,
+    submittedAt: null,
+    verifiedBy: null,
+    verifiedAt: null,
+    verificationNotes: null
   }
 ];
 
@@ -503,6 +474,7 @@ export const INITIAL_ALERTS = [
   {
     id: 'ALT-501',
     type: 'CRITICAL',
+    category: 'Compliance',
     title: 'Overdue Compliance: Land Lease Submission',
     message: 'Delhi Institute of Technology & Management has passed the due date for Perpetual Land Lease Renewal.',
     applicationId: 'APP-2026-0041',
@@ -510,11 +482,15 @@ export const INITIAL_ALERTS = [
     dueAt: '2026-03-20T00:00:00Z',
     createdAt: '2026-03-21T00:00:00Z',
     read: false,
+    acknowledged: false,
+    acknowledgedAt: null,
+    acknowledgedBy: null,
     severity: 'danger'
   },
   {
     id: 'ALT-502',
     type: 'WARNING',
+    category: 'EVC Inspection',
     title: 'EVC Visit Approaching in 48 Hours',
     message: 'Expert Committee on-site physical inspection scheduled for Delhi Institute on March 28, 2026.',
     applicationId: 'APP-2026-0041',
@@ -522,11 +498,15 @@ export const INITIAL_ALERTS = [
     dueAt: '2026-03-28T09:30:00Z',
     createdAt: '2026-03-22T10:00:00Z',
     read: false,
+    acknowledged: false,
+    acknowledgedAt: null,
+    acknowledgedBy: null,
     severity: 'warning'
   },
   {
     id: 'ALT-503',
     type: 'INFO',
+    category: 'Stage Deficiency',
     title: 'Re-Scrutiny Deficiencies Response Pending',
     message: 'Eastern College has 7 days remaining to upload rectified Faculty Cadre Ratio affidavits.',
     applicationId: 'APP-2026-0044',
@@ -534,19 +514,42 @@ export const INITIAL_ALERTS = [
     dueAt: '2026-04-12T00:00:00Z',
     createdAt: '2026-03-22T14:30:00Z',
     read: true,
+    acknowledged: true,
+    acknowledgedAt: '2026-03-23T09:15:00Z',
+    acknowledgedBy: 'Prof. Ananya Sen',
     severity: 'info'
   },
   {
     id: 'ALT-504',
     type: 'CRITICAL',
-    title: 'Immediate Notice: Student Migration Plan',
-    message: 'Telangana Institute has not uploaded student redeployment undertakings for branch closure.',
+    category: 'Compliance',
+    title: 'Expired Statutory Certificate: Structural Safety',
+    message: 'Telangana Institute has an expired Building Occupancy & Stability certification dating from Dec 2025.',
     applicationId: 'APP-2026-0045',
     institutionName: 'Telangana Institute of Pharmaceutical Sciences',
-    dueAt: '2026-03-25T00:00:00Z',
-    createdAt: '2026-03-26T08:00:00Z',
+    dueAt: '2026-01-10T00:00:00Z',
+    createdAt: '2026-03-24T08:00:00Z',
     read: false,
+    acknowledged: false,
+    acknowledgedAt: null,
+    acknowledgedBy: null,
     severity: 'danger'
+  },
+  {
+    id: 'ALT-505',
+    type: 'WARNING',
+    category: 'EVC Inspection',
+    title: 'Schedule Conflict Flagged on Committee Visit',
+    message: 'Prof. R. C. Mathur is designated across two concurrent technical inspection schedules on March 28.',
+    applicationId: 'APP-2026-0041',
+    institutionName: 'Delhi Institute of Technology & Management',
+    dueAt: '2026-03-28T09:30:00Z',
+    createdAt: '2026-03-24T11:30:00Z',
+    read: false,
+    acknowledged: false,
+    acknowledgedAt: null,
+    acknowledgedBy: null,
+    severity: 'warning'
   }
 ];
 
@@ -563,9 +566,16 @@ export const INITIAL_EVC_SCHEDULE = [
       'Dr. Meenakshi Iyer (Architectural Expert, SPA Delhi)',
       'Prof. Arvind Srivastav (AI & Computing Subject Expert)'
     ],
+    assignedTeam: [
+      { name: 'Prof. R. C. Mathur', role: 'Chairperson', organization: 'IIT Roorkee' },
+      { name: 'Dr. Meenakshi Iyer', role: 'Architectural Expert', organization: 'School of Planning & Architecture' },
+      { name: 'Prof. Arvind Srivastav', role: 'Subject Expert (AI & DS)', organization: 'NIT Kurukshetra' }
+    ],
     inspectionScope: 'Physical AI Lab setup, Classroom acoustic standards, Fire safety infrastructure',
     venueAddress: 'Sector 62, Institutional Area, Knowledge Park, New Delhi',
-    reportSubmitted: false
+    conflictWarning: 'Potential travel overlap: Lead assigned to consecutive inspection schedule.',
+    reportSubmitted: false,
+    reportSummary: null
   },
   {
     id: 'EVC-702',
@@ -578,9 +588,15 @@ export const INITIAL_EVC_SCHEDULE = [
       'Prof. K. Venkatesh (Chairperson)',
       'Dr. Priya Nair (Structural Engineering Expert, NIT Surathkal)'
     ],
+    assignedTeam: [
+      { name: 'Prof. K. Venkatesh', role: 'Chairperson', organization: 'IISc Bangalore' },
+      { name: 'Dr. Priya Nair', role: 'Civil & Structural Expert', organization: 'NIT Surathkal' }
+    ],
     inspectionScope: 'Greenfield site clearance, boundary wall verification, barrier-free access for Divyangjan',
     venueAddress: 'Plot 44-B, Aerospace Technology Park, Devanahalli, Bangalore',
-    reportSubmitted: false
+    conflictWarning: null,
+    reportSubmitted: false,
+    reportSummary: null
   },
   {
     id: 'EVC-703',
@@ -593,10 +609,37 @@ export const INITIAL_EVC_SCHEDULE = [
       'Dr. G. K. Deshmukh (Chairperson)',
       'Prof. Sunita Shinde (State DTE Representative)'
     ],
+    assignedTeam: [
+      { name: 'Dr. G. K. Deshmukh', role: 'Chairperson', organization: 'COEP Tech University' },
+      { name: 'Prof. Sunita Shinde', role: 'State Govt DTE Representative', organization: 'DTE Maharashtra' }
+    ],
     inspectionScope: 'Annual random verification of machine workshops and language lab facilities',
     venueAddress: 'Shivajinagar Campus, Pune, Maharashtra',
+    conflictWarning: null,
     reportSubmitted: true,
+    reportSummary: 'All workshops, safety clearances, and software licences verified in accordance with APH 2026 norms.',
     outcome: 'Satisfactory - Full compliance documented'
+  },
+  {
+    id: 'EVC-704',
+    applicationId: 'APP-2026-0044',
+    institutionName: 'Eastern College of Engineering & Bio-Informatics',
+    visitDate: '2026-04-22T11:00:00Z',
+    status: 'Rescheduled',
+    committeeLead: 'Prof. A. K. Banerjee (Jadavpur University)',
+    committeeMembers: [
+      'Prof. A. K. Banerjee (Chairperson)',
+      'Dr. S. Mukherjee (Biotech Subject Expert)'
+    ],
+    assignedTeam: [
+      { name: 'Prof. A. K. Banerjee', role: 'Chairperson', organization: 'Jadavpur University' },
+      { name: 'Dr. S. Mukherjee', role: 'Subject Expert', organization: 'Calcutta University' }
+    ],
+    inspectionScope: 'Bio-Informatics laboratory equipment verification and clean room standards',
+    venueAddress: 'Plot 12, Sector V, Salt Lake Electronic Complex, Kolkata',
+    conflictWarning: null,
+    reportSubmitted: false,
+    reportSummary: null
   }
 ];
 

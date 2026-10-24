@@ -102,11 +102,10 @@ export const authAPI = {
 export const applicationsAPI = {
   getAll: async (filters = {}) => {
     return request('/applications', { method: 'GET' }, () => {
-      // Re-read storage
       applications = getStorage('applications', INITIAL_APPLICATIONS);
       let result = [...applications];
 
-      // Search (by applicationNumber, institutionName, or type)
+      // Search
       if (filters.search) {
         const q = filters.search.toLowerCase().trim();
         result = result.filter(
@@ -173,7 +172,7 @@ export const applicationsAPI = {
       return {
         success: true,
         data: paginatedItems,
-        applications: paginatedItems, // alias for convenience
+        applications: paginatedItems,
         total,
         pagination: {
           page,
@@ -300,7 +299,6 @@ export const applicationsAPI = {
     );
   },
 
-  // Document upload function
   uploadDocument: async (id, docData) => {
     return request(
       `/applications/${id}/documents`,
@@ -338,44 +336,58 @@ export const complianceAPI = {
     return request('/compliance', { method: 'GET' }, () => {
       complianceItems = getStorage('compliance', INITIAL_COMPLIANCE);
       let items = [...complianceItems];
+      const now = new Date();
 
+      // Dynamically assess 'Due Soon' and 'Expired'
+      items = items.map((c) => {
+        const due = new Date(c.dueDate);
+        const expiry = c.expiryDate ? new Date(c.expiryDate) : null;
+        let computedStatus = c.status;
+
+        if (c.status !== 'Completed') {
+          if (expiry && expiry < now) {
+            computedStatus = 'Expired';
+          } else if (due < now) {
+            computedStatus = 'Overdue';
+          } else {
+            const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+            if (diffDays <= 14 && diffDays >= 0 && c.status === 'Pending') {
+              computedStatus = 'Due Soon';
+            }
+          }
+        }
+        return { ...c, computedStatus };
+      });
+
+      // Status filter
       if (filters.status && filters.status !== 'ALL') {
-        items = items.filter((c) => c.status.toLowerCase() === filters.status.toLowerCase());
+        const target = filters.status.toLowerCase();
+        items = items.filter(
+          (c) =>
+            c.status.toLowerCase() === target ||
+            (c.computedStatus && c.computedStatus.toLowerCase() === target)
+        );
       }
+
+      // Criticality filter
       if (filters.criticality && filters.criticality !== 'ALL') {
         items = items.filter((c) => c.criticality.toLowerCase() === filters.criticality.toLowerCase());
       }
+
+      // Search filter
       if (filters.search) {
-        const q = filters.search.toLowerCase();
+        const q = filters.search.toLowerCase().trim();
         items = items.filter(
           (c) =>
             c.requirementType.toLowerCase().includes(q) ||
             c.institutionName.toLowerCase().includes(q) ||
-            c.description.toLowerCase().includes(q)
+            c.description.toLowerCase().includes(q) ||
+            (c.applicationId && c.applicationId.toLowerCase().includes(q))
         );
       }
+
       return items;
     });
-  },
-
-  updateStatus: async (id, status, documentReference = null) => {
-    return request(
-      `/compliance/${id}`,
-      { method: 'PATCH', body: JSON.stringify({ status, documentReference }) },
-      () => {
-        complianceItems = getStorage('compliance', INITIAL_COMPLIANCE);
-        const index = complianceItems.findIndex((c) => c.id === id);
-        if (index === -1) throw new Error('Compliance obligation not found');
-        complianceItems[index] = {
-          ...complianceItems[index],
-          status,
-          ...(documentReference ? { documentReference } : {}),
-          updatedAt: new Date().toISOString()
-        };
-        setStorage('compliance', complianceItems);
-        return complianceItems[index];
-      }
-    );
   },
 
   create: async (data) => {
@@ -389,15 +401,72 @@ export const complianceAPI = {
         requirementType: data.requirementType,
         description: data.description,
         dueDate: data.dueDate,
+        expiryDate: data.expiryDate || new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString(),
         status: 'Pending',
         criticality: data.criticality || 'Medium',
+        certificateNumber: null,
         documentReference: null,
+        evidenceNotes: null,
+        submittedAt: null,
+        verifiedBy: null,
+        verifiedAt: null,
+        verificationNotes: null,
         lastNotifiedAt: new Date().toISOString()
       };
       complianceItems = [newItem, ...complianceItems];
       setStorage('compliance', complianceItems);
       return newItem;
     });
+  },
+
+  submitEvidence: async (id, evidenceData) => {
+    return request(
+      `/compliance/${id}`,
+      { method: 'PATCH', body: JSON.stringify({ status: 'Under Review', ...evidenceData }) },
+      () => {
+        complianceItems = getStorage('compliance', INITIAL_COMPLIANCE);
+        const index = complianceItems.findIndex((c) => c.id === id);
+        if (index === -1) throw new Error('Compliance obligation not found');
+
+        complianceItems[index] = {
+          ...complianceItems[index],
+          status: 'Under Review',
+          documentReference: evidenceData.documentReference || 'Evidence_Document.pdf',
+          certificateNumber: evidenceData.certificateNumber || 'CERT-UPLOAD-2026',
+          expiryDate: evidenceData.expiryDate || complianceItems[index].expiryDate,
+          evidenceNotes: evidenceData.evidenceNotes || 'Evidence uploaded by institution representative.',
+          submittedAt: new Date().toISOString()
+        };
+
+        setStorage('compliance', complianceItems);
+        return complianceItems[index];
+      }
+    );
+  },
+
+  verifyEvidence: async (id, verificationData) => {
+    return request(
+      `/compliance/${id}`,
+      { method: 'PATCH', body: JSON.stringify(verificationData) },
+      () => {
+        complianceItems = getStorage('compliance', INITIAL_COMPLIANCE);
+        const index = complianceItems.findIndex((c) => c.id === id);
+        if (index === -1) throw new Error('Compliance obligation not found');
+
+        const isApproved = verificationData.outcome === 'Completed';
+
+        complianceItems[index] = {
+          ...complianceItems[index],
+          status: isApproved ? 'Completed' : 'Pending',
+          verifiedBy: verificationData.verifiedBy || 'Authorized Scrutiny Officer',
+          verifiedAt: new Date().toISOString(),
+          verificationNotes: verificationData.verificationNotes || (isApproved ? 'Verified satisfactory' : 'Deficiencies identified in submitted evidence.')
+        };
+
+        setStorage('compliance', complianceItems);
+        return complianceItems[index];
+      }
+    );
   }
 };
 
@@ -405,26 +474,55 @@ export const complianceAPI = {
    ALERTS API
    ========================================================================== */
 export const alertsAPI = {
-  getAll: async () => {
+  getAll: async (filters = {}) => {
     return request('/alerts', { method: 'GET' }, () => {
       alerts = getStorage('alerts', INITIAL_ALERTS);
-      return [...alerts];
+      let items = [...alerts];
+
+      if (filters.filter === 'UNREAD') {
+        items = items.filter((a) => !a.read && !a.acknowledged);
+      } else if (filters.filter === 'OVERDUE') {
+        const now = new Date();
+        items = items.filter((a) => a.dueAt && new Date(a.dueAt) < now);
+      } else if (filters.filter === 'COMPLIANCE') {
+        items = items.filter((a) => a.category === 'Compliance');
+      }
+
+      return items;
     });
   },
 
-  markAsRead: async (id) => {
+  acknowledge: async (id, acknowledgedBy = 'Authorized User') => {
     return request(`/alerts/${id}/acknowledge`, { method: 'PATCH' }, () => {
       alerts = getStorage('alerts', INITIAL_ALERTS);
-      alerts = alerts.map((a) => (a.id === id ? { ...a, read: true } : a));
+      const now = new Date().toISOString();
+      alerts = alerts.map((a) =>
+        a.id === id
+          ? {
+              ...a,
+              read: true,
+              acknowledged: true,
+              acknowledgedAt: now,
+              acknowledgedBy
+            }
+          : a
+      );
       setStorage('alerts', alerts);
       return { success: true };
     });
   },
 
-  markAllAsRead: async () => {
+  markAllAsRead: async (acknowledgedBy = 'Authorized User') => {
     return request('/alerts/read-all', { method: 'PATCH' }, () => {
       alerts = getStorage('alerts', INITIAL_ALERTS);
-      alerts = alerts.map((a) => ({ ...a, read: true }));
+      const now = new Date().toISOString();
+      alerts = alerts.map((a) => ({
+        ...a,
+        read: true,
+        acknowledged: true,
+        acknowledgedAt: now,
+        acknowledgedBy
+      }));
       setStorage('alerts', alerts);
       return { success: true };
     });
@@ -438,7 +536,8 @@ export const evcAPI = {
   getAll: async () => {
     return request('/evc', { method: 'GET' }, () => {
       evcSchedule = getStorage('evc', INITIAL_EVC_SCHEDULE);
-      return [...evcSchedule];
+      // Sort chronologically by visitDate
+      return [...evcSchedule].sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
     });
   },
 
@@ -446,22 +545,101 @@ export const evcAPI = {
     return request('/evc', { method: 'POST', body: JSON.stringify(data) }, () => {
       evcSchedule = getStorage('evc', INITIAL_EVC_SCHEDULE);
       const newId = `EVC-${Date.now().toString().slice(-4)}`;
+
+      // Conflict detection check:
+      const visitDateStr = new Date(data.visitDate).toISOString().split('T')[0];
+      const conflictFound = evcSchedule.some((existing) => {
+        const existingDateStr = new Date(existing.visitDate).toISOString().split('T')[0];
+        if (existingDateStr !== visitDateStr) return false;
+        // Check if lead or same institution matches on the same date
+        return (
+          existing.committeeLead?.toLowerCase() === data.committeeLead?.toLowerCase() ||
+          existing.institutionName?.toLowerCase() === data.institutionName?.toLowerCase()
+        );
+      });
+
+      const conflictWarning = conflictFound
+        ? `Schedule Conflict: ${data.committeeLead} or institution has concurrent inspection on ${visitDateStr}!`
+        : null;
+
+      const teamList = [
+        { name: data.committeeLead, role: 'Chairperson', organization: 'Academic Expert' },
+        ...(data.committeeMembersText || '')
+          .split(',')
+          .map((m) => m.trim())
+          .filter(Boolean)
+          .map((m) => ({ name: m, role: 'Subject / Technical Expert', organization: 'AICTE Panel' }))
+      ];
+
       const newVisit = {
         id: newId,
-        applicationId: data.applicationId,
+        applicationId: data.applicationId || 'APP-2026-0041',
         institutionName: data.institutionName,
         visitDate: data.visitDate,
         status: 'Scheduled',
         committeeLead: data.committeeLead,
-        committeeMembers: data.committeeMembers || [data.committeeLead],
-        inspectionScope: data.inspectionScope,
+        committeeMembers: teamList.map((t) => `${t.name} (${t.role})`),
+        assignedTeam: teamList,
+        inspectionScope: data.inspectionScope || 'Physical infrastructure & laboratory verification',
         venueAddress: data.venueAddress,
-        reportSubmitted: false
+        conflictWarning,
+        reportSubmitted: false,
+        reportSummary: null
       };
+
       evcSchedule = [newVisit, ...evcSchedule];
       setStorage('evc', evcSchedule);
       return newVisit;
     });
+  },
+
+  rescheduleVisit: async (id, { newVisitDate, reason, rescheduledBy }) => {
+    return request(
+      `/evc/${id}`,
+      { method: 'PATCH', body: JSON.stringify({ visitDate: newVisitDate, reason }) },
+      () => {
+        evcSchedule = getStorage('evc', INITIAL_EVC_SCHEDULE);
+        const index = evcSchedule.findIndex((e) => e.id === id);
+        if (index === -1) throw new Error('EVC Inspection record not found');
+
+        evcSchedule[index] = {
+          ...evcSchedule[index],
+          visitDate: newVisitDate,
+          status: 'Rescheduled',
+          rescheduledReason: reason,
+          rescheduledBy: rescheduledBy || 'EVC Coordinator',
+          rescheduledAt: new Date().toISOString()
+        };
+
+        setStorage('evc', evcSchedule);
+        return evcSchedule[index];
+      }
+    );
+  },
+
+  completeInspection: async (id, { reportSummary, outcome, completedBy }) => {
+    return request(
+      `/evc/${id}/complete`,
+      { method: 'PATCH', body: JSON.stringify({ reportSummary, outcome }) },
+      () => {
+        evcSchedule = getStorage('evc', INITIAL_EVC_SCHEDULE);
+        const index = evcSchedule.findIndex((e) => e.id === id);
+        if (index === -1) throw new Error('EVC Inspection record not found');
+
+        evcSchedule[index] = {
+          ...evcSchedule[index],
+          status: 'Completed',
+          reportSubmitted: true,
+          reportSummary: reportSummary || 'Inspection conducted with complete laboratory audit.',
+          outcome: outcome || 'Satisfactory - Full compliance documented',
+          completedBy: completedBy || 'Committee Lead',
+          completedAt: new Date().toISOString()
+        };
+
+        setStorage('evc', evcSchedule);
+        return evcSchedule[index];
+      }
+    );
   }
 };
 
@@ -477,30 +655,22 @@ export const dashboardAPI = {
       evcSchedule = getStorage('evc', INITIAL_EVC_SCHEDULE);
 
       const now = new Date();
-
-      // Dynamically calculate:
       const totalApplications = applications.length;
-
-      // Pending scrutiny: stage is SCRUTINY or RE_SCRUTINY
       const pendingScrutiny = applications.filter(
         (a) => a.currentStage === 'SCRUTINY' || a.currentStage === 'RE_SCRUTINY'
       ).length;
 
-      // Overdue applications: not approved or rejected, and targetResolutionDate < now
       const overdueApplications = applications.filter((a) => {
         if (a.currentStage === 'APPROVED' || a.currentStage === 'REJECTED') return false;
         return new Date(a.targetResolutionDate) < now;
       }).length;
 
-      // Pending compliance: status is Pending or Under Review or Overdue
       const pendingCompliance = complianceItems.filter(
-        (c) => c.status === 'Pending' || c.status === 'Under Review' || c.status === 'Overdue'
+        (c) => c.status === 'Pending' || c.status === 'Under Review' || c.status === 'Overdue' || c.status === 'Due Soon'
       ).length;
 
-      // Active EVCs
       const activeEVCs = evcSchedule.filter((e) => e.status === 'Scheduled' || e.status === 'Proposed').length;
 
-      // Calculate dynamic stage distribution
       const stageMap = {};
       WORKFLOW_STAGES.forEach((s) => {
         stageMap[s.id] = { stage: s.name, count: 0, color: s.color };
