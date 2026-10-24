@@ -89,7 +89,7 @@ const complianceItemSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Pending', 'Due Soon', 'Overdue', 'Expired', 'Complied', 'Under Review'],
+      enum: ['Pending', 'Due Soon', 'Overdue', 'Expired', 'Complied', 'Completed', 'Under Review'],
       default: 'Pending',
       index: true,
     },
