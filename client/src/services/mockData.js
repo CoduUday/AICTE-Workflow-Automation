@@ -1,10 +1,13 @@
 // Fictional realistic dataset for AICTE Workflow Automation System
 // Used as default seed and local fallback when backend is not connected.
+// Perfectly aligned with docs/API_CONTRACT.md
 
 export const MOCK_ROLES = {
-  ADMIN: 'ADMIN',
-  REVIEWER: 'REVIEWER',
-  INSTITUTION: 'INSTITUTION'
+  ADMIN: 'admin',
+  SCRUTINY_OFFICER: 'scrutiny_officer',
+  EVC_COORDINATOR: 'evc_coordinator',
+  COMMITTEE_OFFICER: 'committee_officer',
+  INSTITUTION: 'institution'
 };
 
 export const MOCK_USERS = [
@@ -21,13 +24,31 @@ export const MOCK_USERS = [
     id: 'usr-2',
     name: 'Prof. Ananya Sen',
     email: 'reviewer.sen@aicte-india.org',
-    role: MOCK_ROLES.REVIEWER,
+    role: MOCK_ROLES.SCRUTINY_OFFICER,
     designation: 'Senior Scrutiny Officer',
     department: 'Western Regional Office (WRO)',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150'
   },
   {
     id: 'usr-3',
+    name: 'Dr. Meenakshi Iyer',
+    email: 'evc.iyer@aicte-india.org',
+    role: MOCK_ROLES.EVC_COORDINATOR,
+    designation: 'Inspection Cell Coordinator',
+    department: 'Expert Committee Operations',
+    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=150'
+  },
+  {
+    id: 'usr-4',
+    name: 'Justice (Retd.) V. K. Rao',
+    email: 'sac.rao@aicte-india.org',
+    role: MOCK_ROLES.COMMITTEE_OFFICER,
+    designation: 'Standing Appellate Committee Chair',
+    department: 'Appeals & Executive Bureau',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150'
+  },
+  {
+    id: 'usr-5',
     name: 'Dr. K. S. Sundaram',
     email: 'principal@dit-edu.in',
     role: MOCK_ROLES.INSTITUTION,
@@ -39,15 +60,38 @@ export const MOCK_USERS = [
 ];
 
 export const WORKFLOW_STAGES = [
-  { id: 'SUBMITTED', name: 'Application Submitted', order: 1, color: 'blue' },
-  { id: 'SCRUTINY', name: 'Scrutiny Committee Review', order: 2, color: 'indigo' },
-  { id: 'RE_SCRUTINY', name: 'Re-Scrutiny (Deficiencies)', order: 3, color: 'amber' },
-  { id: 'EVC_SCHEDULED', name: 'EVC Visit Scheduled', order: 4, color: 'purple' },
-  { id: 'EVC_COMPLETED', name: 'EVC Inspection Completed', order: 5, color: 'teal' },
-  { id: 'SAC_REVIEW', name: 'Standing Appeals Review', order: 6, color: 'orange' },
-  { id: 'APPROVED', name: 'Executive Approval Granted', order: 7, color: 'emerald' },
-  { id: 'REJECTED', name: 'Application Rejected', order: 8, color: 'rose' }
+  { id: 'SUBMITTED', name: 'Application Submitted', order: 1, color: '#3b82f6' },
+  { id: 'SCRUTINY', name: 'Scrutiny Committee Review', order: 2, color: '#6366f1' },
+  { id: 'RE_SCRUTINY', name: 'Re-Scrutiny (Deficiencies)', order: 3, color: '#f59e0b' },
+  { id: 'EVC_SCHEDULED', name: 'EVC Visit Scheduled', order: 4, color: '#8b5cf6' },
+  { id: 'EVC_COMPLETED', name: 'EVC Inspection Completed', order: 5, color: '#0d9488' },
+  { id: 'SAC_REVIEW', name: 'Standing Appeals Review', order: 6, color: '#ec4899' },
+  { id: 'APPROVED', name: 'Executive Approval Granted', order: 7, color: '#10b981' },
+  { id: 'REJECTED', name: 'Application Rejected', order: 8, color: '#ef4444' }
 ];
+
+// Permitted stage transition state machine per API_CONTRACT.md
+export const PERMITTED_TRANSITIONS = {
+  SUBMITTED: ['SCRUTINY', 'REJECTED'],
+  SCRUTINY: ['RE_SCRUTINY', 'EVC_SCHEDULED', 'APPROVED', 'REJECTED'],
+  RE_SCRUTINY: ['SCRUTINY', 'EVC_SCHEDULED', 'REJECTED'],
+  EVC_SCHEDULED: ['EVC_COMPLETED', 'RE_SCRUTINY'],
+  EVC_COMPLETED: ['SAC_REVIEW', 'APPROVED', 'REJECTED'],
+  SAC_REVIEW: ['APPROVED', 'REJECTED'],
+  APPROVED: [],
+  REJECTED: ['SAC_REVIEW']
+};
+
+export const STAGE_ROLE_PERMISSIONS = {
+  SUBMITTED: ['scrutiny_officer', 'admin'],
+  SCRUTINY: ['scrutiny_officer', 'admin'],
+  RE_SCRUTINY: ['scrutiny_officer', 'admin'],
+  EVC_SCHEDULED: ['evc_coordinator', 'admin'],
+  EVC_COMPLETED: ['committee_officer', 'admin'],
+  SAC_REVIEW: ['committee_officer', 'admin'],
+  APPROVED: ['admin'],
+  REJECTED: ['committee_officer', 'admin']
+};
 
 export const INITIAL_APPLICATIONS = [
   {
@@ -56,6 +100,7 @@ export const INITIAL_APPLICATIONS = [
     institutionId: 'INST-2024-DEL-089',
     institutionName: 'Delhi Institute of Technology & Management',
     region: 'North-West (NWRO)',
+    academicYear: '2026-2027',
     applicationType: 'Extension of Approval (EOA) + New Course (AI & DS)',
     currentStage: 'EVC_SCHEDULED',
     status: 'In Progress',
@@ -67,18 +112,21 @@ export const INITIAL_APPLICATIONS = [
     infrastructureAreaSqM: 14200,
     landTenureType: 'Owned (Perpetual Lease)',
     deficiencyCount: 1,
+    officerComments: 'Scrutiny deficiencies addressed. Physical verification scheduled for laboratory infrastructure.',
     stageHistory: [
       {
         stage: 'SUBMITTED',
         action: 'Application Submitted Online',
         actor: 'Dr. K. S. Sundaram',
+        role: 'institution',
         timestamp: '2026-02-10T10:30:00Z',
-        notes: 'Submitted initial self-disclosure and affidavit forms along with fee receipt.'
+        notes: 'Submitted initial self-disclosure and affidavit forms along with portal fee receipt.'
       },
       {
         stage: 'SCRUTINY',
         action: 'Deficiency Notice Issued',
         actor: 'Prof. Ananya Sen',
+        role: 'scrutiny_officer',
         timestamp: '2026-02-22T14:15:00Z',
         notes: 'Fire safety certificate renewal copy was past 3-year threshold; re-scrutiny requested.'
       },
@@ -86,22 +134,24 @@ export const INITIAL_APPLICATIONS = [
         stage: 'RE_SCRUTINY',
         action: 'Deficiencies Cleared',
         actor: 'Prof. Ananya Sen',
+        role: 'scrutiny_officer',
         timestamp: '2026-03-05T11:00:00Z',
         notes: 'Institution uploaded renewed Fire Safety NOC and updated building occupancy certificate.'
       },
       {
         stage: 'EVC_SCHEDULED',
         action: 'Expert Visit Committee Scheduled',
-        actor: 'Dr. Rajesh Sharma',
+        actor: 'Dr. Meenakshi Iyer',
+        role: 'evc_coordinator',
         timestamp: '2026-03-12T16:00:00Z',
         notes: '3-member inspection team scheduled for on-site physical infrastructure verification.'
       }
     ],
     documents: [
-      { name: 'Fire Safety NOC Renewal.pdf', size: '2.4 MB', uploadDate: '2026-03-04', status: 'Verified' },
-      { name: 'Land Registration & Title Deed.pdf', size: '14.1 MB', uploadDate: '2026-02-09', status: 'Verified' },
-      { name: 'Faculty Cadre Ratio Declaration.xlsx', size: '890 KB', uploadDate: '2026-02-09', status: 'Pending Review' },
-      { name: 'AI_DS_Lab_Equipment_Invoice.pdf', size: '5.2 MB', uploadDate: '2026-02-10', status: 'Verified' }
+      { id: 'doc-001', name: 'Fire Safety NOC Renewal.pdf', size: '2.4 MB', uploadDate: '2026-03-04', status: 'Verified', documentType: 'Statutory NOC', url: '#' },
+      { id: 'doc-002', name: 'Land Registration & Title Deed.pdf', size: '14.1 MB', uploadDate: '2026-02-09', status: 'Verified', documentType: 'Land Document', url: '#' },
+      { id: 'doc-003', name: 'Faculty Cadre Ratio Declaration.xlsx', size: '890 KB', uploadDate: '2026-02-09', status: 'Pending Review', documentType: 'Academic Audit', url: '#' },
+      { id: 'doc-004', name: 'AI_DS_Lab_Equipment_Invoice.pdf', size: '5.2 MB', uploadDate: '2026-02-10', status: 'Verified', documentType: 'Laboratory Spec', url: '#' }
     ]
   },
   {
@@ -110,9 +160,10 @@ export const INITIAL_APPLICATIONS = [
     institutionId: 'INST-2024-BLR-012',
     institutionName: 'Karnataka Institute of Advanced Robotics & AI',
     region: 'South-West (SWRO)',
+    academicYear: '2026-2027',
     applicationType: 'New Technical Institution Setup',
     currentStage: 'SCRUTINY',
-    status: 'Pending Scrutiny',
+    status: 'In Progress',
     assignedTo: 'Prof. Ananya Sen',
     assignedToId: 'usr-2',
     submittedAt: '2026-03-01T09:15:00Z',
@@ -121,26 +172,29 @@ export const INITIAL_APPLICATIONS = [
     infrastructureAreaSqM: 22000,
     landTenureType: 'Registered Lease (33 Years)',
     deficiencyCount: 0,
+    officerComments: 'Under initial scrutiny by regional evaluation panel.',
     stageHistory: [
       {
         stage: 'SUBMITTED',
         action: 'Fresh Application Lodged',
         actor: 'Dr. H. V. Gowda',
+        role: 'institution',
         timestamp: '2026-03-01T09:15:00Z',
         notes: 'Proposal for establishment of autonomous technological campus.'
       },
       {
         stage: 'SCRUTINY',
-        action: 'Assigned to Western & South Scrutiny Panel',
+        action: 'Assigned to Scrutiny Panel',
         actor: 'Dr. Rajesh Sharma',
+        role: 'admin',
         timestamp: '2026-03-04T12:00:00Z',
         notes: 'Under scrutiny by panel member 2.'
       }
     ],
     documents: [
-      { name: 'Master Plan & Architectural Approval.pdf', size: '18.6 MB', uploadDate: '2026-03-01', status: 'Under Review' },
-      { name: 'Bank Guarantee FDR AICTE Joint Account.pdf', size: '1.2 MB', uploadDate: '2026-03-01', status: 'Verified' },
-      { name: 'Governing Council Resolution.pdf', size: '940 KB', uploadDate: '2026-03-01', status: 'Under Review' }
+      { id: 'doc-005', name: 'Master Plan & Architectural Approval.pdf', size: '18.6 MB', uploadDate: '2026-03-01', status: 'Under Review', documentType: 'Building Plan', url: '#' },
+      { id: 'doc-006', name: 'Bank Guarantee FDR AICTE Joint Account.pdf', size: '1.2 MB', uploadDate: '2026-03-01', status: 'Verified', documentType: 'Financial Security', url: '#' },
+      { id: 'doc-007', name: 'Governing Council Resolution.pdf', size: '940 KB', uploadDate: '2026-03-01', status: 'Under Review', documentType: 'Governance', url: '#' }
     ]
   },
   {
@@ -149,43 +203,48 @@ export const INITIAL_APPLICATIONS = [
     institutionId: 'INST-2024-PUN-055',
     institutionName: 'Maharashtra Polytechnic & Vocational Institute',
     region: 'Western (WRO)',
+    academicYear: '2025-2026',
     applicationType: 'Extension of Approval (EOA)',
     currentStage: 'APPROVED',
     status: 'Approved',
     assignedTo: 'Dr. Rajesh Sharma',
     assignedToId: 'usr-1',
-    submittedAt: '2026-01-15T08:00:00Z',
-    targetResolutionDate: '2026-03-01T00:00:00Z',
+    submittedAt: '2025-11-15T08:00:00Z',
+    targetResolutionDate: '2026-01-15T00:00:00Z',
     intakeCapacityRequested: 240,
     infrastructureAreaSqM: 11500,
     landTenureType: 'Owned',
     deficiencyCount: 0,
+    officerComments: 'Formal Letter of Approval issued for academic year 2025-26 with zero deficiencies.',
     stageHistory: [
       {
         stage: 'SUBMITTED',
         action: 'EOA Application Submitted',
         actor: 'Prof. S. Patil',
-        timestamp: '2026-01-15T08:00:00Z',
+        role: 'institution',
+        timestamp: '2025-11-15T08:00:00Z',
         notes: 'Annual mandatory disclosure with zero change in sanctioned intake.'
       },
       {
         stage: 'SCRUTINY',
         action: 'Scrutiny Completed (Zero Deficiency)',
         actor: 'Prof. Ananya Sen',
-        timestamp: '2026-01-28T16:00:00Z',
-        notes: 'All compliance records in full accordance with APH 2026 standards.'
+        role: 'scrutiny_officer',
+        timestamp: '2025-12-05T16:00:00Z',
+        notes: 'All compliance records in full accordance with APH standards.'
       },
       {
         stage: 'APPROVED',
         action: 'EOA Approval Letter Generated',
         actor: 'Dr. Rajesh Sharma',
-        timestamp: '2026-02-25T11:30:00Z',
-        notes: 'Formal Letter of Approval issued for academic year 2026-27.'
+        role: 'admin',
+        timestamp: '2026-01-10T11:30:00Z',
+        notes: 'Formal Letter of Approval issued.'
       }
     ],
     documents: [
-      { name: 'Audited Financial Statements 2024-25.pdf', size: '4.8 MB', uploadDate: '2026-01-15', status: 'Verified' },
-      { name: 'Mandatory Disclosure Web Portal URL.pdf', size: '210 KB', uploadDate: '2026-01-15', status: 'Verified' }
+      { id: 'doc-008', name: 'Audited Financial Statements 2024-25.pdf', size: '4.8 MB', uploadDate: '2025-11-15', status: 'Verified', documentType: 'Financial Statement', url: '#' },
+      { id: 'doc-009', name: 'Mandatory Disclosure Web Portal URL.pdf', size: '210 KB', uploadDate: '2025-11-15', status: 'Verified', documentType: 'Statutory Disclosure', url: '#' }
     ]
   },
   {
@@ -194,36 +253,40 @@ export const INITIAL_APPLICATIONS = [
     institutionId: 'INST-2024-KOL-021',
     institutionName: 'Eastern College of Engineering & Bio-Informatics',
     region: 'Eastern (ERO)',
-    applicationType: 'Increase in Sanctioned Intake (CSE & ECE)',
+    academicYear: '2026-2027',
+    applicationType: 'Increase in Sanctioned Intake',
     currentStage: 'RE_SCRUTINY',
-    status: 'Deficiencies Pending',
+    status: 'Deficient',
     assignedTo: 'Prof. Ananya Sen',
     assignedToId: 'usr-2',
-    submittedAt: '2026-02-18T11:45:00Z',
-    targetResolutionDate: '2026-04-10T00:00:00Z',
+    submittedAt: '2026-01-18T11:45:00Z',
+    targetResolutionDate: '2026-02-28T00:00:00Z', // Overdue
     intakeCapacityRequested: 120,
     infrastructureAreaSqM: 9800,
     landTenureType: 'Owned',
     deficiencyCount: 2,
+    officerComments: 'Cadre ratio deficit of 4 Assistant Professors and structural setback compliance pending.',
     stageHistory: [
       {
         stage: 'SUBMITTED',
         action: 'Application Submitted',
         actor: 'Dr. B. K. Roy',
-        timestamp: '2026-02-18T11:45:00Z',
+        role: 'institution',
+        timestamp: '2026-01-18T11:45:00Z',
         notes: 'Request for addition of 60 seats in CSE and 60 in ECE.'
       },
       {
         stage: 'SCRUTINY',
-        action: 'Deficiency Identified (Cadre Ratio & Built-up Area)',
+        action: 'Deficiency Identified',
         actor: 'Prof. Ananya Sen',
-        timestamp: '2026-03-02T15:00:00Z',
+        role: 'scrutiny_officer',
+        timestamp: '2026-02-02T15:00:00Z',
         notes: 'Faculty Cadre ratio falls short of 1:15 requirement. Laboratory floor plan lacks requisite safety setbacks.'
       }
     ],
     documents: [
-      { name: 'Faculty List & Form 16.pdf', size: '6.1 MB', uploadDate: '2026-02-18', status: 'Deficient' },
-      { name: 'Floor Plans with Setback Marks.pdf', size: '11.5 MB', uploadDate: '2026-02-18', status: 'Deficient' }
+      { id: 'doc-010', name: 'Faculty List & Form 16.pdf', size: '6.1 MB', uploadDate: '2026-01-18', status: 'Deficient', documentType: 'Faculty Roster', url: '#' },
+      { id: 'doc-011', name: 'Floor Plans with Setback Marks.pdf', size: '11.5 MB', uploadDate: '2026-01-18', status: 'Deficient', documentType: 'Architectural Blueprint', url: '#' }
     ]
   },
   {
@@ -232,22 +295,25 @@ export const INITIAL_APPLICATIONS = [
     institutionId: 'INST-2024-HYD-078',
     institutionName: 'Telangana Institute of Pharmaceutical Sciences',
     region: 'South-Central (SCRO)',
-    applicationType: 'Closure of Non-Viable Course & Branch Renaming',
+    academicYear: '2026-2027',
+    applicationType: 'Closure of Non-Viable Course',
     currentStage: 'SAC_REVIEW',
-    status: 'Under SAC Hearing',
-    assignedTo: 'Dr. Rajesh Sharma',
-    assignedToId: 'usr-1',
+    status: 'In Progress',
+    assignedTo: 'Justice (Retd.) V. K. Rao',
+    assignedToId: 'usr-4',
     submittedAt: '2026-01-20T14:10:00Z',
     targetResolutionDate: '2026-03-30T00:00:00Z',
     intakeCapacityRequested: 60,
     infrastructureAreaSqM: 8500,
     landTenureType: 'Owned',
     deficiencyCount: 1,
+    officerComments: 'Student migration redeployment hearing scheduled with appellate committee.',
     stageHistory: [
       {
         stage: 'SUBMITTED',
         action: 'Closure Application Submitted',
         actor: 'Dr. M. Reddy',
+        role: 'institution',
         timestamp: '2026-01-20T14:10:00Z',
         notes: 'NOC from State Government and Affiliating University attached.'
       },
@@ -255,6 +321,7 @@ export const INITIAL_APPLICATIONS = [
         stage: 'SCRUTINY',
         action: 'Clarification Needed on Student Redeployment',
         actor: 'Prof. Ananya Sen',
+        role: 'scrutiny_officer',
         timestamp: '2026-02-05T10:00:00Z',
         notes: 'Dispute regarding transfer of 2nd year students to neighboring college.'
       },
@@ -262,13 +329,97 @@ export const INITIAL_APPLICATIONS = [
         stage: 'SAC_REVIEW',
         action: 'Referred to Standing Appellate Committee',
         actor: 'Dr. Rajesh Sharma',
+        role: 'admin',
         timestamp: '2026-02-28T16:20:00Z',
         notes: 'Appellate hearing scheduled with institutional leadership.'
       }
     ],
     documents: [
-      { name: 'State Govt NOC for Closure.pdf', size: '1.4 MB', uploadDate: '2026-01-20', status: 'Verified' },
-      { name: 'Student Redeployment Plan & Undertaking.pdf', size: '3.1 MB', uploadDate: '2026-02-12', status: 'Under Review' }
+      { id: 'doc-012', name: 'State Govt NOC for Closure.pdf', size: '1.4 MB', uploadDate: '2026-01-20', status: 'Verified', documentType: 'Government NOC', url: '#' },
+      { id: 'doc-013', name: 'Student Redeployment Plan & Undertaking.pdf', size: '3.1 MB', uploadDate: '2026-02-12', status: 'Under Review', documentType: 'Student Welfare Undertaking', url: '#' }
+    ]
+  },
+  {
+    id: 'APP-2026-0046',
+    applicationNumber: 'AICTE/2026/0046',
+    institutionId: 'INST-2024-JAIPUR-009',
+    institutionName: 'Rajasthan Academy of Technology & Design',
+    region: 'North-West (NWRO)',
+    academicYear: '2026-2027',
+    applicationType: 'Introduction of Emerging Areas',
+    currentStage: 'SUBMITTED',
+    status: 'Pending',
+    assignedTo: 'Prof. Ananya Sen',
+    assignedToId: 'usr-2',
+    submittedAt: '2026-03-15T11:00:00Z',
+    targetResolutionDate: '2026-04-30T00:00:00Z',
+    intakeCapacityRequested: 60,
+    infrastructureAreaSqM: 10200,
+    landTenureType: 'Owned Freehold',
+    deficiencyCount: 0,
+    officerComments: 'Freshly queued for preliminary scrutiny.',
+    stageHistory: [
+      {
+        stage: 'SUBMITTED',
+        action: 'Application Submitted Online',
+        actor: 'Dr. R. K. Meena',
+        role: 'institution',
+        timestamp: '2026-03-15T11:00:00Z',
+        notes: 'Request for introduction of Cyber Security & IoT B.Tech program.'
+      }
+    ],
+    documents: [
+      { id: 'doc-014', name: 'Affiliation Letter from State Technical University.pdf', size: '2.1 MB', uploadDate: '2026-03-15', status: 'Pending Review', documentType: 'University Affiliation', url: '#' },
+      { id: 'doc-015', name: 'AICTE Joint Account Guarantee.pdf', size: '1.9 MB', uploadDate: '2026-03-15', status: 'Pending Review', documentType: 'Financial Guarantee', url: '#' }
+    ]
+  },
+  {
+    id: 'APP-2026-0047',
+    applicationNumber: 'AICTE/2026/0047',
+    institutionId: 'INST-2024-CHG-034',
+    institutionName: 'Punjab Institute of Nanotechnology & Advanced Physics',
+    region: 'North-West (NWRO)',
+    academicYear: '2024-2025',
+    applicationType: 'New Technical Institution Setup',
+    currentStage: 'REJECTED',
+    status: 'Rejected',
+    assignedTo: 'Justice (Retd.) V. K. Rao',
+    assignedToId: 'usr-4',
+    submittedAt: '2024-10-10T14:00:00Z',
+    targetResolutionDate: '2024-12-15T00:00:00Z',
+    intakeCapacityRequested: 180,
+    infrastructureAreaSqM: 13500,
+    landTenureType: 'Sub-Lease (Unapproved)',
+    deficiencyCount: 3,
+    officerComments: 'Land title dispute and non-contiguous land parcel prohibited approval under APH rules.',
+    stageHistory: [
+      {
+        stage: 'SUBMITTED',
+        action: 'Application Lodged',
+        actor: 'Dr. G. S. Sandhu',
+        role: 'institution',
+        timestamp: '2024-10-10T14:00:00Z',
+        notes: 'Application for greenfield technical campus.'
+      },
+      {
+        stage: 'SCRUTINY',
+        action: 'Deficiencies Found (Land Title)',
+        actor: 'Prof. Ananya Sen',
+        role: 'scrutiny_officer',
+        timestamp: '2024-10-25T11:00:00Z',
+        notes: 'Land deed indicates disputed sub-lease.'
+      },
+      {
+        stage: 'REJECTED',
+        action: 'Application Rejected by SAC',
+        actor: 'Justice (Retd.) V. K. Rao',
+        role: 'committee_officer',
+        timestamp: '2024-11-20T16:00:00Z',
+        notes: 'Statutory minimum 30-year unencumbered land tenure condition not fulfilled.'
+      }
+    ],
+    documents: [
+      { id: 'doc-016', name: 'Disputed Land Sub-lease Deed.pdf', size: '8.4 MB', uploadDate: '2024-10-10', status: 'Deficient', documentType: 'Land Document', url: '#' }
     ]
   }
 ];
@@ -453,8 +604,9 @@ export const MOCK_DASHBOARD_METRICS = {
   kpis: {
     totalApplications: 124,
     pendingScrutiny: 38,
+    overdueApplications: 4,
+    pendingCompliance: 12,
     activeEVCs: 14,
-    overdueCompliance: 9,
     approvedRate: '88.5%',
     avgResolutionDays: 34
   },
@@ -462,9 +614,11 @@ export const MOCK_DASHBOARD_METRICS = {
     { stage: 'Submitted', count: 28, color: '#3b82f6' },
     { stage: 'Scrutiny', count: 38, color: '#6366f1' },
     { stage: 'Re-Scrutiny', count: 18, color: '#f59e0b' },
-    { stage: 'EVC Visit', count: 14, color: '#8b5cf6' },
+    { stage: 'EVC Scheduled', count: 14, color: '#8b5cf6' },
+    { stage: 'EVC Completed', count: 11, color: '#0d9488' },
     { stage: 'SAC Review', count: 9, color: '#ec4899' },
-    { stage: 'Approved', count: 17, color: '#10b981' }
+    { stage: 'Approved', count: 17, color: '#10b981' },
+    { stage: 'Rejected', count: 4, color: '#ef4444' }
   ],
   monthlyTrend: [
     { month: 'Nov 2025', submitted: 15, approved: 12, overdue: 4 },

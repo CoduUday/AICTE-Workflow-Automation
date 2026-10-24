@@ -8,7 +8,8 @@ import {
   INITIAL_ALERTS,
   INITIAL_EVC_SCHEDULE,
   MOCK_DASHBOARD_METRICS,
-  WORKFLOW_STAGES
+  WORKFLOW_STAGES,
+  PERMITTED_TRANSITIONS
 } from './mockData';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -82,7 +83,7 @@ export const authAPI = {
         const user = MOCK_USERS.find((u) => u.email === email || u.role === role) || MOCK_USERS[0];
         localStorage.setItem('aicte_user', JSON.stringify(user));
         localStorage.setItem('aicte_token', 'mock_jwt_token_sample');
-        return { success: true, user, token: 'mock_jwt_token_sample' };
+        return { success: true, data: { user, token: 'mock_jwt_token_sample' } };
       }
     );
   },
@@ -101,9 +102,13 @@ export const authAPI = {
 export const applicationsAPI = {
   getAll: async (filters = {}) => {
     return request('/applications', { method: 'GET' }, () => {
+      // Re-read storage
+      applications = getStorage('applications', INITIAL_APPLICATIONS);
       let result = [...applications];
+
+      // Search (by applicationNumber, institutionName, or type)
       if (filters.search) {
-        const q = filters.search.toLowerCase();
+        const q = filters.search.toLowerCase().trim();
         result = result.filter(
           (a) =>
             a.applicationNumber.toLowerCase().includes(q) ||
@@ -111,18 +116,80 @@ export const applicationsAPI = {
             a.applicationType.toLowerCase().includes(q)
         );
       }
+
+      // Stage filter
       if (filters.stage && filters.stage !== 'ALL') {
         result = result.filter((a) => a.currentStage === filters.stage);
       }
+
+      // Status filter
+      if (filters.status && filters.status !== 'ALL') {
+        result = result.filter(
+          (a) => a.status.toLowerCase().replace(/\s+/g, '_') === filters.status.toLowerCase().replace(/\s+/g, '_')
+        );
+      }
+
+      // Academic Year filter
+      if (filters.academicYear && filters.academicYear !== 'ALL') {
+        result = result.filter((a) => a.academicYear === filters.academicYear);
+      }
+
+      // Application Type filter
+      if (filters.applicationType && filters.applicationType !== 'ALL') {
+        result = result.filter((a) => a.applicationType.toLowerCase().includes(filters.applicationType.toLowerCase()));
+      }
+
+      // Institution Scope filter
       if (filters.institutionId) {
         result = result.filter((a) => a.institutionId === filters.institutionId);
       }
-      return { total: result.length, applications: result };
+
+      // Sorting
+      const sortBy = filters.sortBy || 'submittedAt';
+      const sortOrder = filters.sortOrder === 'asc' ? 1 : -1;
+
+      result.sort((a, b) => {
+        let valA = a[sortBy] ?? '';
+        let valB = b[sortBy] ?? '';
+
+        if (sortBy === 'submittedAt' || sortBy === 'targetResolutionDate') {
+          return (new Date(valA) - new Date(valB)) * sortOrder;
+        }
+
+        if (typeof valA === 'string') {
+          return valA.localeCompare(valB) * sortOrder;
+        }
+        return (valA - valB) * sortOrder;
+      });
+
+      // Pagination
+      const page = Number(filters.page) || 1;
+      const limit = Number(filters.limit) || 10;
+      const total = result.length;
+      const totalPages = Math.ceil(total / limit) || 1;
+      const startIndex = (page - 1) * limit;
+      const paginatedItems = result.slice(startIndex, startIndex + limit);
+
+      return {
+        success: true,
+        data: paginatedItems,
+        applications: paginatedItems, // alias for convenience
+        total,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1
+        }
+      };
     });
   },
 
   getById: async (id) => {
     return request(`/applications/${id}`, { method: 'GET' }, () => {
+      applications = getStorage('applications', INITIAL_APPLICATIONS);
       const app = applications.find((a) => a.id === id || a.applicationNumber === id);
       if (!app) throw new Error('Application not found');
       return app;
@@ -134,37 +201,53 @@ export const applicationsAPI = {
       '/applications',
       { method: 'POST', body: JSON.stringify(data) },
       () => {
+        applications = getStorage('applications', INITIAL_APPLICATIONS);
         const idNumber = String(applications.length + 41).padStart(4, '0');
+        const now = new Date().toISOString();
+        const resolution = new Date(Date.now() + 45 * 24 * 3600 * 1000).toISOString();
+
         const newApp = {
           id: `APP-2026-${idNumber}`,
           applicationNumber: `AICTE/2026/${idNumber}`,
-          institutionId: data.institutionId || 'INST-2024-DEL-089',
-          institutionName: data.institutionName || 'Delhi Institute of Technology & Management',
+          institutionId: data.institutionId || `INST-2026-${idNumber}`,
+          institutionName: data.institutionName,
           region: data.region || 'North-West (NWRO)',
+          academicYear: data.academicYear || '2026-2027',
           applicationType: data.applicationType || 'Extension of Approval (EOA)',
           currentStage: 'SUBMITTED',
-          status: 'Under Review',
+          status: 'Pending',
           assignedTo: 'Prof. Ananya Sen',
           assignedToId: 'usr-2',
-          submittedAt: new Date().toISOString(),
-          targetResolutionDate: new Date(Date.now() + 45 * 24 * 3600 * 1000).toISOString(),
+          submittedAt: now,
+          targetResolutionDate: resolution,
           intakeCapacityRequested: Number(data.intakeCapacityRequested) || 120,
           infrastructureAreaSqM: Number(data.infrastructureAreaSqM) || 10000,
-          landTenureType: data.landTenureType || 'Owned',
+          landTenureType: data.landTenureType || 'Owned Freehold',
           deficiencyCount: 0,
+          officerComments: data.notes || 'Fresh application queued for scrutiny review.',
           stageHistory: [
             {
               stage: 'SUBMITTED',
               action: 'Application Submitted Online',
-              actor: data.submittedBy || 'Institution Official',
-              timestamp: new Date().toISOString(),
-              notes: data.notes || 'Application initiated through online compliance portal.'
+              actor: data.submittedBy || 'Institution Signatory',
+              role: 'institution',
+              timestamp: now,
+              notes: data.notes || 'Online submission completed with mandatory institutional affidavits.'
             }
           ],
           documents: [
-            { name: 'Mandatory Disclosure Affidavit.pdf', size: '1.8 MB', uploadDate: new Date().toISOString().split('T')[0], status: 'Verified' }
+            {
+              id: `doc-${Date.now()}`,
+              name: 'Mandatory Disclosure Affidavit.pdf',
+              size: '1.8 MB',
+              uploadDate: now.split('T')[0],
+              status: 'Verified',
+              documentType: 'Statutory Disclosure',
+              url: '#'
+            }
           ]
         };
+
         applications = [newApp, ...applications];
         setStorage('applications', applications);
         return newApp;
@@ -172,11 +255,12 @@ export const applicationsAPI = {
     );
   },
 
-  updateStatus: async (id, nextStage, actorName, notes) => {
+  updateStage: async (id, { nextStage, notes, action, actorName, role }) => {
     return request(
-      `/applications/${id}/status`,
-      { method: 'PATCH', body: JSON.stringify({ currentStage: nextStage, notes }) },
+      `/applications/${id}/stage`,
+      { method: 'PATCH', body: JSON.stringify({ nextStage, notes, action }) },
       () => {
+        applications = getStorage('applications', INITIAL_APPLICATIONS);
         const index = applications.findIndex((a) => a.id === id || a.applicationNumber === id);
         if (index === -1) throw new Error('Application not found');
 
@@ -185,12 +269,25 @@ export const applicationsAPI = {
         const stageName = stageObj ? stageObj.name : nextStage;
 
         app.currentStage = nextStage;
-        app.status = nextStage === 'APPROVED' ? 'Approved' : nextStage === 'REJECTED' ? 'Rejected' : 'In Progress';
-        
+        if (nextStage === 'APPROVED') {
+          app.status = 'Approved';
+        } else if (nextStage === 'REJECTED') {
+          app.status = 'Rejected';
+        } else if (nextStage === 'RE_SCRUTINY') {
+          app.status = 'Deficient';
+        } else {
+          app.status = 'In Progress';
+        }
+
+        if (notes) {
+          app.officerComments = notes;
+        }
+
         const newHistoryEntry = {
           stage: nextStage,
-          action: `Moved to ${stageName}`,
-          actor: actorName || 'Authorized Reviewer',
+          action: action || `Moved to ${stageName}`,
+          actor: actorName || 'Authorized Officer',
+          role: role || 'scrutiny_officer',
           timestamp: new Date().toISOString(),
           notes: notes || `Application moved to ${stageName} stage.`
         };
@@ -199,6 +296,35 @@ export const applicationsAPI = {
         applications[index] = app;
         setStorage('applications', applications);
         return app;
+      }
+    );
+  },
+
+  // Document upload function
+  uploadDocument: async (id, docData) => {
+    return request(
+      `/applications/${id}/documents`,
+      { method: 'POST', body: JSON.stringify(docData) },
+      () => {
+        applications = getStorage('applications', INITIAL_APPLICATIONS);
+        const index = applications.findIndex((a) => a.id === id || a.applicationNumber === id);
+        if (index === -1) throw new Error('Application not found');
+
+        const app = { ...applications[index] };
+        const newDoc = {
+          id: `doc-${Date.now()}`,
+          name: docData.name || 'Uploaded_Document.pdf',
+          size: docData.size || '2.1 MB',
+          uploadDate: new Date().toISOString().split('T')[0],
+          status: 'Pending Review',
+          documentType: docData.documentType || 'Statutory Annexure',
+          url: '#'
+        };
+
+        app.documents = [...(app.documents || []), newDoc];
+        applications[index] = app;
+        setStorage('applications', applications);
+        return newDoc;
       }
     );
   }
@@ -210,12 +336,14 @@ export const applicationsAPI = {
 export const complianceAPI = {
   getAll: async (filters = {}) => {
     return request('/compliance', { method: 'GET' }, () => {
+      complianceItems = getStorage('compliance', INITIAL_COMPLIANCE);
       let items = [...complianceItems];
+
       if (filters.status && filters.status !== 'ALL') {
-        items = items.filter((c) => c.status === filters.status);
+        items = items.filter((c) => c.status.toLowerCase() === filters.status.toLowerCase());
       }
       if (filters.criticality && filters.criticality !== 'ALL') {
-        items = items.filter((c) => c.criticality === filters.criticality);
+        items = items.filter((c) => c.criticality.toLowerCase() === filters.criticality.toLowerCase());
       }
       if (filters.search) {
         const q = filters.search.toLowerCase();
@@ -235,6 +363,7 @@ export const complianceAPI = {
       `/compliance/${id}`,
       { method: 'PATCH', body: JSON.stringify({ status, documentReference }) },
       () => {
+        complianceItems = getStorage('compliance', INITIAL_COMPLIANCE);
         const index = complianceItems.findIndex((c) => c.id === id);
         if (index === -1) throw new Error('Compliance obligation not found');
         complianceItems[index] = {
@@ -251,6 +380,7 @@ export const complianceAPI = {
 
   create: async (data) => {
     return request('/compliance', { method: 'POST', body: JSON.stringify(data) }, () => {
+      complianceItems = getStorage('compliance', INITIAL_COMPLIANCE);
       const newId = `CMP-${Date.now().toString().slice(-4)}`;
       const newItem = {
         id: newId,
@@ -277,12 +407,14 @@ export const complianceAPI = {
 export const alertsAPI = {
   getAll: async () => {
     return request('/alerts', { method: 'GET' }, () => {
+      alerts = getStorage('alerts', INITIAL_ALERTS);
       return [...alerts];
     });
   },
 
   markAsRead: async (id) => {
-    return request(`/alerts/${id}/read`, { method: 'PATCH' }, () => {
+    return request(`/alerts/${id}/acknowledge`, { method: 'PATCH' }, () => {
+      alerts = getStorage('alerts', INITIAL_ALERTS);
       alerts = alerts.map((a) => (a.id === id ? { ...a, read: true } : a));
       setStorage('alerts', alerts);
       return { success: true };
@@ -291,6 +423,7 @@ export const alertsAPI = {
 
   markAllAsRead: async () => {
     return request('/alerts/read-all', { method: 'PATCH' }, () => {
+      alerts = getStorage('alerts', INITIAL_ALERTS);
       alerts = alerts.map((a) => ({ ...a, read: true }));
       setStorage('alerts', alerts);
       return { success: true };
@@ -304,12 +437,14 @@ export const alertsAPI = {
 export const evcAPI = {
   getAll: async () => {
     return request('/evc', { method: 'GET' }, () => {
+      evcSchedule = getStorage('evc', INITIAL_EVC_SCHEDULE);
       return [...evcSchedule];
     });
   },
 
   scheduleVisit: async (data) => {
-    return request('/evc/schedule', { method: 'POST', body: JSON.stringify(data) }, () => {
+    return request('/evc', { method: 'POST', body: JSON.stringify(data) }, () => {
+      evcSchedule = getStorage('evc', INITIAL_EVC_SCHEDULE);
       const newId = `EVC-${Date.now().toString().slice(-4)}`;
       const newVisit = {
         id: newId,
@@ -336,20 +471,59 @@ export const evcAPI = {
 export const dashboardAPI = {
   getSummary: async () => {
     return request('/dashboard/summary', { method: 'GET' }, () => {
-      // Recalculate dynamic totals from local store
-      const pendingScrutiny = applications.filter((a) => a.currentStage === 'SCRUTINY' || a.currentStage === 'RE_SCRUTINY').length;
-      const overdueCompliance = complianceItems.filter((c) => c.status === 'Overdue').length;
+      applications = getStorage('applications', INITIAL_APPLICATIONS);
+      complianceItems = getStorage('compliance', INITIAL_COMPLIANCE);
+      alerts = getStorage('alerts', INITIAL_ALERTS);
+      evcSchedule = getStorage('evc', INITIAL_EVC_SCHEDULE);
+
+      const now = new Date();
+
+      // Dynamically calculate:
+      const totalApplications = applications.length;
+
+      // Pending scrutiny: stage is SCRUTINY or RE_SCRUTINY
+      const pendingScrutiny = applications.filter(
+        (a) => a.currentStage === 'SCRUTINY' || a.currentStage === 'RE_SCRUTINY'
+      ).length;
+
+      // Overdue applications: not approved or rejected, and targetResolutionDate < now
+      const overdueApplications = applications.filter((a) => {
+        if (a.currentStage === 'APPROVED' || a.currentStage === 'REJECTED') return false;
+        return new Date(a.targetResolutionDate) < now;
+      }).length;
+
+      // Pending compliance: status is Pending or Under Review or Overdue
+      const pendingCompliance = complianceItems.filter(
+        (c) => c.status === 'Pending' || c.status === 'Under Review' || c.status === 'Overdue'
+      ).length;
+
+      // Active EVCs
       const activeEVCs = evcSchedule.filter((e) => e.status === 'Scheduled' || e.status === 'Proposed').length;
+
+      // Calculate dynamic stage distribution
+      const stageMap = {};
+      WORKFLOW_STAGES.forEach((s) => {
+        stageMap[s.id] = { stage: s.name, count: 0, color: s.color };
+      });
+      applications.forEach((a) => {
+        if (stageMap[a.currentStage]) {
+          stageMap[a.currentStage].count += 1;
+        }
+      });
+      const stageDistribution = Object.values(stageMap);
 
       return {
         ...MOCK_DASHBOARD_METRICS,
         kpis: {
-          ...MOCK_DASHBOARD_METRICS.kpis,
-          totalApplications: applications.length,
+          totalApplications,
           pendingScrutiny,
+          overdueApplications,
+          pendingCompliance,
           activeEVCs,
-          overdueCompliance
-        }
+          approvedRate: '88.5%',
+          avgResolutionDays: 32
+        },
+        stageDistribution
       };
     });
   }

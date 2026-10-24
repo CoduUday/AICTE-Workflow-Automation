@@ -8,7 +8,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
       const stored = localStorage.getItem('aicte_user');
-      return stored ? JSON.parse(stored) : MOCK_USERS[0]; // Default to Admin for full demo access
+      return stored ? JSON.parse(stored) : MOCK_USERS[0]; // Default to Admin for full demo visibility
     } catch {
       return MOCK_USERS[0];
     }
@@ -30,8 +30,9 @@ export function AuthProvider({ children }) {
     try {
       const targetUser = MOCK_USERS.find((u) => u.role === roleName) || MOCK_USERS[0];
       const res = await authAPI.login(targetUser.email, targetUser.role);
-      setUser(res.user || targetUser);
-      setToken(res.token || 'demo_token');
+      const authenticatedUser = res?.data?.user || res?.user || targetUser;
+      setUser(authenticatedUser);
+      setToken(res?.data?.token || res?.token || 'demo_token');
     } finally {
       setLoading(false);
     }
@@ -48,8 +49,9 @@ export function AuthProvider({ children }) {
         designation: 'Institutional Representative'
       };
       const res = await authAPI.login(email, targetUser.role);
-      setUser(res.user || targetUser);
-      setToken(res.token || 'demo_token');
+      const authenticatedUser = res?.data?.user || res?.user || targetUser;
+      setUser(authenticatedUser);
+      setToken(res?.data?.token || res?.token || 'demo_token');
       return { success: true };
     } finally {
       setLoading(false);
@@ -79,8 +81,15 @@ export function AuthProvider({ children }) {
         logout,
         hasRole,
         isAdmin: user?.role === MOCK_ROLES.ADMIN,
-        isReviewer: user?.role === MOCK_ROLES.REVIEWER,
-        isInstitution: user?.role === MOCK_ROLES.INSTITUTION
+        isScrutinyOfficer: user?.role === MOCK_ROLES.SCRUTINY_OFFICER,
+        isEVCCoordinator: user?.role === MOCK_ROLES.EVC_COORDINATOR,
+        isCommitteeOfficer: user?.role === MOCK_ROLES.COMMITTEE_OFFICER,
+        isInstitution: user?.role === MOCK_ROLES.INSTITUTION,
+        canReview:
+          user?.role === MOCK_ROLES.ADMIN ||
+          user?.role === MOCK_ROLES.SCRUTINY_OFFICER ||
+          user?.role === MOCK_ROLES.EVC_COORDINATOR ||
+          user?.role === MOCK_ROLES.COMMITTEE_OFFICER
       }}
     >
       {children}
